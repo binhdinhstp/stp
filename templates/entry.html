@@ -1,0 +1,20 @@
+{% extends 'base.html' %}{% block body %}
+<p><a href="{{url_for('index',kind=kind,year=year,month=month)}}">← Quay lại danh sách</a></p>
+<div class="panel"><div class="pill">{{'I. KẾT QUẢ THỰC HIỆN' if field.part=='result' else 'II. CHƯƠNG TRÌNH CÔNG TÁC'}}</div>
+<h2>{{field.heading}}</h2><p class="muted">Kỳ báo cáo: {{period}} · Đơn vị: {{user.department}}</p>
+<form method="post" id="editor"><input type="hidden" name="csrf" value="{{csrf()}}">
+<label>Nội dung đơn vị báo cáo<textarea id="content" name="content" rows="13" maxlength="50000" required {% if locked %}readonly{% endif %}>{{content}}</textarea></label>
+{% if ai_ready %}
+<div class="review"><strong>Kiểm tra chính tả AI phía máy chủ đã được cấu hình</strong>
+<p class="muted">Chỉ gửi nội dung được cơ quan cho phép chuyển cho dịch vụ AI bên ngoài. Không nhập bí mật nhà nước, thông tin cá nhân, tài khoản, mật khẩu, API key hoặc nội dung chưa được phép công bố. Bộ lọc tự động không thay thế kiểm tra phân loại dữ liệu.</p>
+<label class="check"><input type="checkbox" name="safe_to_send" value="yes" {% if safe_to_send %}checked{% endif %}> Tôi xác nhận nội dung này đã được phân loại và được phép gửi cho nhà cung cấp AI theo quy định của cơ quan.</label>
+</div>
+{% else %}
+<p class="warning">AI chưa được kích hoạt hoặc chưa có phê duyệt bảo mật. {% if ai_required %}Đang khóa lưu vì cơ quan yêu cầu bắt buộc kiểm tra AI.{% else %}Hiện chỉ kiểm tra bằng bộ quy tắc giới hạn.{% endif %}</p>
+{% endif %}
+{% if not locked %}<button class="primary" name="action" value="check" type="submit">① {{'Kiểm tra chính tả bằng AI' if ai_ready else 'Kiểm tra quy tắc cơ bản'}}</button>{% endif %}
+{% if checked %}<div class="review"><h3>Kết quả kiểm tra {{'bằng AI' if ai_ready else 'quy tắc'}}</h3>
+{% if findings %}<p class="warning">Phát hiện {{findings|length}} đề xuất cần người dùng xem xét:</p><ol>{% for e in findings %}<li>{{e.label}}: <del>{{e.before}}</del> → <b>{{e.after}}</b> <button type="button" class="apply-suggestion" data-start="{{e.at}}" data-end="{{e.end}}" data-after="{{e.after}}">Áp dụng sửa</button></li>{% endfor %}</ol><p>Sau khi sửa hãy nhấn kiểm tra lại. AI có thể đề xuất sai: người nhập chịu trách nhiệm đối chiếu nội dung gốc.</p>
+{% else %}<p class="success-text">Không có đề xuất sửa trong lần kiểm tra này. Không đồng nghĩa văn bản hoàn toàn không có lỗi.</p>{% endif %}
+{% if not findings %}<label class="check"><input type="checkbox" name="ack" value="yes"> Tôi đã đọc lại nội dung và xác nhận số liệu, thuật ngữ, căn cứ pháp lý, chính tả trước khi lưu.</label><input type="hidden" name="proof" value="{{proof}}"><button class="primary" name="action" value="save">② Lưu nội dung đã kiểm tra</button>{% endif %}
+</div>{% endif %}</form></div>{% endblock %}
