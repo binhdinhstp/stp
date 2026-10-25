@@ -1,0 +1,2 @@
+// If the user edits after a proofreading pass, hide approval controls and require a new check.
+document.addEventListener('DOMContentLoaded',()=>{const editor=document.querySelector('#editor');const textarea=document.querySelector('#content');if(editor&&textarea){const original=textarea.value;textarea.addEventListener('input',()=>{if(textarea.value!==original){const review=document.querySelector('.review');if(review)review.remove();}})}});
