@@ -44,14 +44,37 @@ HEAD={i:dict(PARAS).get(i,'') for i in set(sum(CHILD_INDICES,[])+GROUP_INDICES+P
 FIELDS=[{'id':f'r{i}','heading':HEAD[i],'group':gi+1,'part':'result','paragraph':i} for gi,ls in enumerate(CHILD_INDICES) for i in ls]+[{'id':f'p{i}','heading':HEAD[i],'group':0,'part':'plan','paragraph':i} for i in PLAN_INDICES]
 LOOKUP={x['id']:x for x in FIELDS}
 # Small, explicitly bounded rule-based pre-save review; not an AI proofreading claim.
-RULES=[('triễn khai','triển khai'),('kiễm tra','kiểm tra'),('thẫm định','thẩm định'),('phỗ biến','phổ biến'),('thưc hiện','thực hiện'),('quy đinh','quy định'),('giãi quyết','giải quyết'),('xữ lý','xử lý'),('hổ trợ','hỗ trợ'),('pháp luât','pháp luật')]
+RULES=[
+ ('triễn khai','triển khai'),('kiễm tra','kiểm tra'),('thẫm định','thẩm định'),
+ ('phỗ biến','phổ biến'),('thưc hiện','thực hiện'),('quy đinh','quy định'),
+ ('giãi quyết','giải quyết'),('xữ lý','xử lý'),('hổ trợ','hỗ trợ'),
+ ('pháp luât','pháp luật'),('báo cao','báo cáo'),('công tac','công tác'),
+ ('tư phap','tư pháp'),('thực hiên','thực hiện'),('đươc','được'),
+ ('đia phương','địa phương'),('địa phuơng','địa phương'),
+ ('cơ quan nhà nuớc','cơ quan nhà nước'),('quãn lý','quản lý'),
+ ('kiên nghị','kiến nghị'),('phản anh','phản ánh'),('văn bãn','văn bản'),
+ ('thủ tuc hành chính','thủ tục hành chính'),('hộ tich','hộ tịch'),
+ ('công chưng','công chứng'),('đấu gia tài sản','đấu giá tài sản'),
+ ('phòng chông tham nhũng','phòng, chống tham nhũng'),
+ ('giám đinh tư pháp','giám định tư pháp'),('hòa giãi','hòa giải'),
+ ('nghiệp vu','nghiệp vụ'),('kết quã','kết quả'),('cấp xa','cấp xã'),
+ ('đánh gia','đánh giá'),('quốc tich','quốc tịch'),
+]
 def issues(s):
  r=[]
  for old,new in RULES:
-  for m in re.finditer(re.escape(old),s,re.I):r.append({'at':m.start(),'before':m.group(),'after':new,'label':'Từ có khả năng sai chính tả'})
- for m in re.finditer(r' {2,}',s):r.append({'at':m.start(),'before':m.group(),'after':' ','label':'Khoảng trắng liên tiếp'})
- for m in re.finditer(r' +[,.;:!?]',s):r.append({'at':m.start(),'before':m.group(),'after':m.group().lstrip(),'label':'Khoảng trắng trước dấu câu'})
- return sorted(r,key=lambda x:x['at'])
+  for m in re.finditer(re.escape(old),s,re.I):
+   r.append({'at':m.start(),'end':m.end(),'before':m.group(),'after':new,'label':'Từ/cụm từ có khả năng sai chính tả'})
+ for m in re.finditer(r' {2,}',s):
+  r.append({'at':m.start(),'end':m.end(),'before':m.group(),'after':' ','label':'Khoảng trắng liên tiếp'})
+ for m in re.finditer(r' +[,.;:!?]',s):
+  r.append({'at':m.start(),'end':m.end(),'before':m.group(),'after':m.group().lstrip(),'label':'Khoảng trắng trước dấu câu'})
+ r.sort(key=lambda x:(x['at'],-x['end']))
+ # Filter overlapping suggestions so applying one will not corrupt another.
+ out=[];last=-1
+ for item in r:
+  if item['at']>=last:out.append(item);last=item['end']
+ return out
 def digest(s):return hashlib.sha256(s.encode('utf-8')).hexdigest()
 def csrf():return session.setdefault('csrf',secrets.token_urlsafe(24))
 app.jinja_env.globals['csrf']=csrf
